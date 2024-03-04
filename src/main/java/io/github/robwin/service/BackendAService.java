@@ -32,9 +32,9 @@ public class BackendAService implements Service {
     private static final String BACKEND_A = "backendA";
 
     @Override
-    @CircuitBreaker(name = BACKEND_A)
-    @Bulkhead(name = BACKEND_A)
-    @Retry(name = BACKEND_A)
+    @CircuitBreaker(name = BACKEND_A) // 断路器。断路器以10为周期计算失败率，调用5次后，如果有超过50%的失败率，断路器打开，后续请求直接返回fallback。经过waitDurationInOpenState（5s）后，断路器进入half-open状态，允许permittedNumberOfCallsInHalfOpenState（3）个请求通过，如果成功率超过50%，断路器关闭，否则继续打开。
+    @Bulkhead(name = BACKEND_A) // 限流。最大并发数为10，超过10的请求直接返回fallback。
+    @Retry(name = BACKEND_A) // 重试。最多重试3次，重试间隔为100ms。
     public String failure() {
         throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "This is a remote exception");
     }
@@ -70,7 +70,7 @@ public class BackendAService implements Service {
     }
 
     @Override
-    @TimeLimiter(name = BACKEND_A)
+    @TimeLimiter(name = BACKEND_A) // 超时熔断
     @CircuitBreaker(name = BACKEND_A, fallbackMethod = "fluxFallback")
     public Flux<String> fluxTimeout() {
         return Flux.

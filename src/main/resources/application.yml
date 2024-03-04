@@ -24,107 +24,111 @@ management.metrics.distribution.percentiles-histogram.resilience4j.circuitbreake
 
 #resilience4j.circuitbreaker.metrics.use_legacy_binder: true
 
-resilience4j.circuitbreaker:
-    configs:
-        default:
-            registerHealthIndicator: true
-            slidingWindowSize: 10
-            minimumNumberOfCalls: 5
-            permittedNumberOfCallsInHalfOpenState: 3
-            automaticTransitionFromOpenToHalfOpenEnabled: true
-            waitDurationInOpenState: 5s
-            failureRateThreshold: 50
-            eventConsumerBufferSize: 10
-            recordExceptions:
+resilience4j.circuitbreaker: # 配置 CircuitBreaker 断路器
+    configs: # 配置断路器的策略
+        default: # 默认策略
+            registerHealthIndicator: true # 是否注册健康指标
+            slidingWindowSize: 10  # 窗口大小，表示断路器跟踪的最近调用次数
+            minimumNumberOfCalls: 5  # 最小调用次数，用于计算断路器状态
+            permittedNumberOfCallsInHalfOpenState: 3 # 半开状态下允许的最大调用次数
+            automaticTransitionFromOpenToHalfOpenEnabled: true # 是否启用自动从开启状态转为半开启状态
+            waitDurationInOpenState: 5s # 在开启状态下等待时间
+            failureRateThreshold: 50 # 失败率阈值，超过此值将触发断路器开启
+            eventConsumerBufferSize: 10 # 事件消费缓冲区大小
+            recordExceptions: # 需要记录的异常类型列表
                 - org.springframework.web.client.HttpServerErrorException
                 - java.util.concurrent.TimeoutException
                 - java.io.IOException
-            ignoreExceptions:
+            ignoreExceptions: # 需要忽略的异常类型列表
                 - io.github.robwin.exception.BusinessException
-        shared:
-            slidingWindowSize: 100
-            permittedNumberOfCallsInHalfOpenState: 30
-            waitDurationInOpenState: 1s
-            failureRateThreshold: 50
-            eventConsumerBufferSize: 10
-            ignoreExceptions:
+        shared: # 共享策略
+            slidingWindowSize: 100 # 窗口大小
+            permittedNumberOfCallsInHalfOpenState: 30 # 半开状态下允许的最大调用次数
+            waitDurationInOpenState: 1s # 在开启状态下等待时间
+            failureRateThreshold: 50 # 失败率阈值
+            eventConsumerBufferSize: 10 # 事件消费缓冲区大小
+            ignoreExceptions: # 需要忽略的异常类型列表
                 - io.github.robwin.exception.BusinessException
-    instances:
-        backendA:
-            baseConfig: default
-        backendB:
-            registerHealthIndicator: true
-            slidingWindowSize: 10
-            minimumNumberOfCalls: 10
-            permittedNumberOfCallsInHalfOpenState: 3
-            waitDurationInOpenState: 5s
-            failureRateThreshold: 50
-            eventConsumerBufferSize: 10
-            recordFailurePredicate: io.github.robwin.exception.RecordFailurePredicate
-resilience4j.retry:
-    configs:
-        default:
-            maxAttempts: 3
-            waitDuration: 100
-            retryExceptions:
-                - org.springframework.web.client.HttpServerErrorException
-                - java.util.concurrent.TimeoutException
-                - java.io.IOException
-            ignoreExceptions:
-                - io.github.robwin.exception.BusinessException
-    instances:
-        backendA:
-            baseConfig: default
-        backendB:
-            baseConfig: default
-resilience4j.bulkhead:
-    configs:
-        default:
-            maxConcurrentCalls: 100
-    instances:
-        backendA:
-            maxConcurrentCalls: 10
-        backendB:
-            maxWaitDuration: 10ms
-            maxConcurrentCalls: 20
+    instances: # 实例配置
+        backendA: # 后端A实例配置
+            baseConfig: default # 使用默认配置
+        backendB: # 后端B实例配置
+            registerHealthIndicator: true # 是否注册健康指标
+            slidingWindowSize: 10 # 窗口大小
+            minimumNumberOfCalls: 10 # 最小调用次数
+            permittedNumberOfCallsInHalfOpenState: 3 # 半开状态下允许的最大调用次数
+            waitDurationInOpenState: 5s # 在开启状态下等待时间
+            failureRateThreshold: 50 # 失败率阈值
+            eventConsumerBufferSize: 10 # 事件消费缓冲区大小
+            recordFailurePredicate: io.github.robwin.exception.RecordFailurePredicate # 记录失败的断言条件
+resilience4j.retry: # 配置 Retry 重试策略
+    configs: # 配置重试策略的选项
+        default: # 默认策略
+            maxAttempts: 3 # 最大重试次数，当达到最大重试次数后，将不再继续重试
+            waitDuration: 100 # 每次重试的等待时间，单位为毫秒
+            retryExceptions: # 需要重试的异常类型列表
+                - org.springframework.web.client.HttpServerErrorException # 示例：Spring 的 HTTP 服务端错误异常
+                - java.util.concurrent.TimeoutException # 示例：Java 中的超时异常
+                - java.io.IOException # 示例：Java 中的 IO 异常
+            ignoreExceptions: # 需要忽略的异常类型列表
+                - io.github.robwin.exception.BusinessException # 示例：自定义的业务异常
+    instances: # 配置 Retry 重试策略的实例
+        backendA: # 后端 A
+            baseConfig: default # 使用默认的配置
+        backendB: # 后端 B
+            baseConfig: default # 使用默认的配置
 
-resilience4j.thread-pool-bulkhead:
-    configs:
-        default:
-            maxThreadPoolSize: 4
-            coreThreadPoolSize: 2
-            queueCapacity: 2
-    instances:
-        backendA:
-            baseConfig: default
-        backendB:
-            maxThreadPoolSize: 1
-            coreThreadPoolSize: 1
-            queueCapacity: 1
+resilience4j.bulkhead: # 配置 Bulkhead 信号量隔离策略
+    configs: # 配置 Bulkhead 信号量隔离策略的选项
+        default: # 默认策略
+            maxConcurrentCalls: 100 # 最大并发调用数，表示同时允许的最大请求数
+    instances: # 配置 Bulkhead 信号量隔离策略的实例
+        backendA: # 后端 A
+            maxConcurrentCalls: 10 # 该后端的最大并发调用数
+        backendB: # 后端 B
+            maxWaitDuration: 10ms # 最大等待时间，表示在达到最大并发调用数后，新的请求最长等待的时间
+            maxConcurrentCalls: 20 # 该后端的最大并发调用数
 
-resilience4j.ratelimiter:
-    configs:
-        default:
-            registerHealthIndicator: false
-            limitForPeriod: 10
-            limitRefreshPeriod: 1s
-            timeoutDuration: 0
-            eventConsumerBufferSize: 100
-    instances:
-        backendA:
-            baseConfig: default
-        backendB:
-            limitForPeriod: 6
-            limitRefreshPeriod: 500ms
-            timeoutDuration: 3s
 
-resilience4j.timelimiter:
-    configs:
-        default:
-            cancelRunningFuture: false
-            timeoutDuration: 2s
-    instances:
-        backendA:
-            baseConfig: default
-        backendB:
-            baseConfig: default
+resilience4j.thread-pool-bulkhead: # 配置线程池 Bulkhead 策略
+    configs: # 配置线程池 Bulkhead 策略的选项
+        default: # 默认策略
+            maxThreadPoolSize: 4 # 最大线程池大小，表示线程池中允许的最大线程数
+            coreThreadPoolSize: 2 # 核心线程池大小，表示线程池中保持活动状态的最小线程数
+            queueCapacity: 2 # 队列容量，表示等待队列的最大容量
+    instances: # 配置线程池 Bulkhead 策略的实例
+        backendA: # 后端 A
+            baseConfig: default # 使用默认的配置
+        backendB: # 后端 B
+            maxThreadPoolSize: 1 # 最大线程池大小，表示线程池中允许的最大线程数
+            coreThreadPoolSize: 1 # 核心线程池大小，表示线程池中保持活动状态的最小线程数
+            queueCapacity: 1 # 队列容量，表示等待队列的最大容量
+
+resilience4j.ratelimiter: # 配置限流器策略
+    configs: # 配置限流器策略的选项
+        default: # 默认策略
+            registerHealthIndicator: false # 是否注册健康指示器，默认为 false
+            limitForPeriod: 10 # 每个时间周期的限流阈值，表示每个时间周期内允许的最大请求数
+            limitRefreshPeriod: 1s # 限流周期，表示限流阈值重置的时间周期
+            timeoutDuration: 0 # 超时持续时间，表示请求等待执行的最长时间，单位为毫秒，0 表示无限期等待
+            eventConsumerBufferSize: 100 # 事件消费者缓冲区大小，表示事件消费者队列的最大容量
+    instances: # 配置限流器策略的实例
+        backendA: # 后端 A
+            baseConfig: default # 使用默认的配置
+        backendB: # 后端 B
+            limitForPeriod: 6 # 后端 B 的每个时间周期的限流阈值为 6
+            limitRefreshPeriod: 500ms # 后端 B 的限流周期为 500 毫秒
+            timeoutDuration: 3s # 后端 B 的超时持续时间为 3 秒
+
+
+resilience4j.timelimiter: # 配置时间限制器策略
+    configs: # 配置时间限制器策略的选项
+        default: # 默认策略
+            cancelRunningFuture: false # 是否取消正在运行的 Future，默认为 false，表示不取消正在运行的 Future
+            timeoutDuration: 2s # 超时持续时间，表示请求的最长等待时间，单位为秒
+    instances: # 配置时间限制器策略的实例
+        backendA: # 后端 A
+            baseConfig: default # 使用默认的配置
+        backendB: # 后端 B
+            baseConfig: default # 使用默认的配置
+
