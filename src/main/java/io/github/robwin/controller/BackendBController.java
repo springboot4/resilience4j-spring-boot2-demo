@@ -36,15 +36,33 @@ import static java.util.Arrays.asList;
 @RequestMapping(value = "/backendB")
 public class BackendBController {
 
-    private static final String BACKEND_B = "backendB";
-    private final Service businessBService;
+    /**
+     * 断路器
+     */
     private final CircuitBreaker circuitBreaker;
+    /**
+     * 隔板
+     */
     private final Bulkhead bulkhead;
+    /**
+     * 线程池隔板
+     */
     private final ThreadPoolBulkhead threadPoolBulkhead;
+    /**
+     * 重试
+     */
     private final Retry retry;
+    /**
+     * 限流
+     */
     private final RateLimiter rateLimiter;
+    /**
+     * 限时
+     */
     private final TimeLimiter timeLimiter;
     private final ScheduledExecutorService scheduledExecutorService;
+    private final Service businessBService;
+    private static final String BACKEND_B = "backendB";
 
     public BackendBController(
             @Qualifier("backendBService")Service businessBService,

@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.github.resilience4j.bulkhead.annotation.Bulkhead.Type;
@@ -31,14 +33,40 @@ public class BackendAService implements Service {
 
     private static final String BACKEND_A = "backendA";
 
+    /**
+     * <p>断路器</p>
+     * <p>
+     * 断路器以10次调用为周期计算失败率。一旦调用次数达到5次，开始计算失败率，一旦失败率超过50%，断路器将会打开，
+     * 后续的请求会直接返回fallback结果。在断路器打开的状态下，所有的请求都会被快速失败，
+     * 不会再尝试调用被保护的方法。
+     * </p>
+     *
+     * <p>经过等待时间（5秒）后，断路器会进入半开启状态。在半开启状态下，断路器将允许一定数量（3个）的请求通过，
+     * 以检测被保护的方法是否已经恢复正常。如果这些请求中的成功率超过50%，则断路器会关闭，
+     * 允许后续的请求正常调用被保护的方法。如果仍然失败，则断路器会继续保持打开状态。
+     * </p>
+     *
+     * <p>限流</p>
+     * <p>
+     * 限流策略设置了最大并发数为10。这意味着超过10个并发请求会被限制，并且直接返回fallback结果。
+     * </p>
+     *
+     * <p>重试</p>
+     * <p>
+     * 重试策略设置了最多重试3次，并且每次重试之间的间隔为100毫秒。
+     * </p>
+     */
     @Override
-    @CircuitBreaker(name = BACKEND_A) // 断路器。断路器以10为周期计算失败率，调用5次后，如果有超过50%的失败率，断路器打开，后续请求直接返回fallback。经过waitDurationInOpenState（5s）后，断路器进入half-open状态，允许permittedNumberOfCallsInHalfOpenState（3）个请求通过，如果成功率超过50%，断路器关闭，否则继续打开。
-    @Bulkhead(name = BACKEND_A) // 限流。最大并发数为10，超过10的请求直接返回fallback。
-    @Retry(name = BACKEND_A) // 重试。最多重试3次，重试间隔为100ms。
+    @CircuitBreaker(name = BACKEND_A)
+    @Bulkhead(name = BACKEND_A)
+    @Retry(name = BACKEND_A)
     public String failure() {
         throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "This is a remote exception");
     }
 
+    /**
+     * 因为抛出的是被忽略的异常 所以不会打开断路器
+     */
     @Override
     @CircuitBreaker(name = BACKEND_A)
     @Bulkhead(name = BACKEND_A)
@@ -54,6 +82,9 @@ public class BackendAService implements Service {
         return "Hello World from backend A";
     }
 
+    /**
+     * 没有记录的异常 不会打开断路器
+     */
     @Override
     @CircuitBreaker(name = BACKEND_A)
     @Bulkhead(name = BACKEND_A)
@@ -70,7 +101,7 @@ public class BackendAService implements Service {
     }
 
     @Override
-    @TimeLimiter(name = BACKEND_A) // 超时熔断
+    @TimeLimiter(name = BACKEND_A)
     @CircuitBreaker(name = BACKEND_A, fallbackMethod = "fluxFallback")
     public Flux<String> fluxTimeout() {
         return Flux.
@@ -127,6 +158,9 @@ public class BackendAService implements Service {
         return CompletableFuture.completedFuture("Hello World from backend A");
     }
 
+    /**
+     * 线程池隔离,超出线程池容量的失败
+     */
     @Override
     @Bulkhead(name = BACKEND_A, type = Type.THREADPOOL)
     @TimeLimiter(name = BACKEND_A)
@@ -137,6 +171,7 @@ public class BackendAService implements Service {
         future.completeExceptionally(new IOException("BAM!"));
         return future;
     }
+
 
     @Override
     @Bulkhead(name = BACKEND_A, type = Type.THREADPOOL)
@@ -168,7 +203,7 @@ public class BackendAService implements Service {
     }
 
     private Mono<String> monoFallback(Exception ex) {
-        return Mono.just("Recovered: " + ex.toString());
+        return Mono.just("monoFallback：Recovered: " + ex.toString());
     }
 
     private Flux<String> fluxFallback(Exception ex) {
